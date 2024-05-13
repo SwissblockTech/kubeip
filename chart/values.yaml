@@ -1,3 +1,8 @@
+# Name of the chart.
+nameOverride: kubeip
+# Fully qualified app name.
+fullnameOverride: kubeip
+
 # The cloud provider where your Kubernetes cluster is running.
 # This value determines the appropriate annotations for the Service Account.
 # Currently acceptable values are 'gcp' or 'aws'.
@@ -10,17 +15,15 @@ namespaceOverride: kube-system
 image:
   repository: doitintl/kubeip-agent
   tag: latest
+  # digest: "sha256:xxx"
 
 # Configuration for the Kubernetes Service Account.
 serviceAccount:
   create: true
-  name: kubeip-service-account
+  name: kubeip
   annotations:
-    gcpServiceAccountEmail: kubeip-service-account@workload-id-117715.iam.gserviceaccount.com
-    # annotations:
-    #   awsRoleArn: "your-aws-role-arn"
-    #   gcpServiceAccountEmail: "your-google-service-account-email"
-
+    gcpServiceAccountEmail: GCP-SA-NAME@GCP-PROJECT-NAME.iam.gserviceaccount.com
+    awsRoleArn: arn:aws:iam::111122223333:role/my-role
 
 # Role-Based Access Control (RBAC) configuration.
 rbac:
@@ -30,12 +33,14 @@ rbac:
 daemonSet:
   terminationGracePeriodSeconds: 30
   priorityClassName: system-node-critical
-  nodeSelector:
-    nodegroup: public
-    kubeip: use
   env:
+    # PROJECT: GCP-PROJECT-NAME
+    # REGION: GCP-REGION
     FILTER: labels.kubeip=reserved;labels.environment=demo
-    LOG_LEVEL: debug
+    # RETRY_INTERVAL: 60s
+    # RETRY_ATTEMPTS: 60
+    # RELEASE_ON_EXIT: true
+    LOG_LEVEL: info
     LOG_JSON: true
   resources:
     requests:
@@ -44,3 +49,6 @@ daemonSet:
     limits:
       cpu: 100m
       memory: 128Mi
+  nodeSelector:
+    kubeip: use
+    nodegroup: public

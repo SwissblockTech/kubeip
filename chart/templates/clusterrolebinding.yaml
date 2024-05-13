@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kubeip.fullname" . }}-cluster-role-binding
+  name: {{ include "kubeip.fullname" . }}
   labels:
     {{- include "kubeip.labels" . | nindent 4 }}
 subjects:
@@ -11,6 +11,6 @@ subjects:
     namespace: {{ include "kubeip.namespace" . }}
 roleRef:
   kind: ClusterRole
-  name: {{ include "kubeip.fullname" . }}-cluster-role
+  name: {{ include "kubeip.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

@@ -5,52 +5,63 @@ metadata:
   labels:
     {{- include "kubeip.labels" . | nindent 4 }}
 spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ include "kubeip.name" . }}
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubeip.name" . }}
   template:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "kubeip.name" . }}
     spec:
-      serviceAccountName: {{ include "kubeip.serviceAccountName" . | quote }}
       terminationGracePeriodSeconds: {{ .Values.daemonSet.terminationGracePeriodSeconds }}
-      priorityClassName: {{ .Values.daemonSet.priorityClassName | quote }}
-      nodeSelector:
-{{- if .Values.daemonSet.nodeSelector }}
-{{- toYaml .Values.daemonSet.nodeSelector | nindent 8 }}
-{{- end }}
-      tolerations:
-        - operator: "Exists"
-          effect: "NoSchedule"
-        - operator: "Exists"
-          effect: "NoExecute"
+      priorityClassName: {{ .Values.daemonSet.priorityClassName }}
+      serviceAccountName: {{ include "kubeip.serviceAccountName" . }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
       containers:
-        - name: kubeip
-          image: "{{ .Values.image.repository }}"
+        - name: {{ include "kubeip.name" . }}
+          image: {{ required "A valid .Values.image.repository entry is required" .Values.image.repository }}{{- if .Values.image.tag }}:{{ .Values.image.tag }}{{- end }}{{- if .Values.image.digest }}@{{ .Values.image.digest }}{{- end }}
           imagePullPolicy: Always
-          resources:
-{{- toYaml .Values.daemonSet.resources | nindent 12 }}
           env:
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            {{- if .Values.daemonSet.env.PROJECT }}
+            - name: PROJECT
+              value: {{ .Values.daemonSet.env.PROJECT }}
+            {{- end }}
+            {{- if .Values.daemonSet.env.REGION }}
+            - name: REGION
+              value: {{ .Values.daemonSet.env.REGION }}
+            {{- end }}
             - name: FILTER
-              value: {{ .Values.daemonSet.env.FILTER | quote }}
+              value: {{ .Values.daemonSet.env.FILTER }}
+            {{- if .Values.daemonSet.env.RETRY_INTERVAL }}
+            - name: RETRY_INTERVAL
+              value: {{ .Values.daemonSet.env.RETRY_INTERVAL }}
+            {{- end }}
+            {{- if .Values.daemonSet.env.RETRY_ATTEMPTS }}
+            - name: RETRY_ATTEMPTS
+              value: {{ .Values.daemonSet.env.RETRY_ATTEMPTS }}
+            {{- end }}
+            {{- if .Values.daemonSet.env.RELEASE_ON_EXIT }}
+            - name: RELEASE_ON_EXIT
+              value: {{ .Values.daemonSet.env.RELEASE_ON_EXIT }}
+            {{- end }}
             - name: LOG_LEVEL
-              value: {{ .Values.daemonSet.env.LOG_LEVEL | quote }}
+              value: {{ .Values.daemonSet.env.LOG_LEVEL }}
             - name: LOG_JSON
-              value: {{ .Values.daemonSet.env.LOG_JSON | quote }}
+              value: {{ .Values.daemonSet.env.LOG_JSON }}
+          resources:
+            {{- toYaml .Values.daemonSet.resources | nindent 12 }}
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -58,3 +69,12 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+      nodeSelector:
+        {{- if .Values.daemonSet.nodeSelector }}
+        {{- toYaml .Values.daemonSet.nodeSelector | nindent 8 }}
+        {{- end }}
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
